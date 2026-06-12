@@ -1,20 +1,38 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { Minus, Plus, Trash, Barcode } from "@phosphor-icons/react";
 import type { Producto } from "@/lib/supabase";
+import { formatearCOP } from "@/lib/moneda";
 
 interface ProductoCardProps {
   producto: Producto;
   onCambiarCantidad: (id: string, cantidad: number) => void;
+  onCambiarPrecio: (id: string, precio: number | null) => void;
   onEliminar: (id: string) => void;
 }
 
 export default function ProductoCard({
   producto,
   onCambiarCantidad,
+  onCambiarPrecio,
   onEliminar,
 }: ProductoCardProps) {
+  const [editandoPrecio, setEditandoPrecio] = useState(false);
+  const [precioBorrador, setPrecioBorrador] = useState("");
+
+  const iniciarEdicion = () => {
+    setPrecioBorrador(producto.precio != null ? String(producto.precio) : "");
+    setEditandoPrecio(true);
+  };
+
+  const confirmarPrecio = () => {
+    const valor = precioBorrador.trim();
+    onCambiarPrecio(producto.id, valor === "" ? null : Math.max(0, Number(valor)));
+    setEditandoPrecio(false);
+  };
+
   return (
     <article className="group flex items-center gap-4 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4 transition-colors hover:border-zinc-300 dark:hover:border-zinc-600">
       <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
@@ -55,6 +73,39 @@ export default function ProductoCard({
             {producto.descripcion}
           </p>
         )}
+        <div className="mt-1">
+          {editandoPrecio ? (
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={50}
+              autoFocus
+              value={precioBorrador}
+              onChange={(e) => setPrecioBorrador(e.target.value)}
+              onBlur={confirmarPrecio}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") confirmarPrecio();
+                if (e.key === "Escape") setEditandoPrecio(false);
+              }}
+              placeholder="Precio COP"
+              className="h-7 w-28 rounded-md border border-emerald-500 bg-white dark:bg-zinc-900 px-2 font-mono text-xs text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={iniciarEdicion}
+              aria-label="Editar precio"
+              className={`rounded-full px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                producto.precio != null
+                  ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }`}
+            >
+              {formatearCOP(producto.precio)}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 p-1">

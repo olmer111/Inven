@@ -3,9 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Package, ClipboardText, GearSix } from "@phosphor-icons/react";
+import { Package, ClipboardText, GearSix, ChatCircleDots } from "@phosphor-icons/react";
 
-type PestanaDash = "inventario" | "pedidos";
+type PestanaDash = "inventario" | "pedidos" | "asistente";
 
 interface BottomNavProps {
   pestana?: PestanaDash;
@@ -15,6 +15,7 @@ interface BottomNavProps {
 const TABS_DASH = [
   { id: "inventario" as const, Icono: Package, etiqueta: "Inventario" },
   { id: "pedidos" as const, Icono: ClipboardText, etiqueta: "Pedidos" },
+  { id: "asistente" as const, Icono: ChatCircleDots, etiqueta: "Asistente" },
 ];
 
 export default function BottomNav({ pestana, onCambiar }: BottomNavProps) {
@@ -27,7 +28,7 @@ export default function BottomNav({ pestana, onCambiar }: BottomNavProps) {
       className="fixed bottom-0 inset-x-0 z-50 border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-md"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <div className="mx-auto flex h-16 max-w-3xl items-center justify-around px-2">
+      <div className="mx-auto flex h-16 max-w-3xl items-center justify-around px-1">
         {TABS_DASH.map(({ id, Icono, etiqueta }) => {
           const activo = !enConfig && pestana === id;
           return (
@@ -38,7 +39,7 @@ export default function BottomNav({ pestana, onCambiar }: BottomNavProps) {
                 if (enConfig) router.push("/dashboard");
                 onCambiar?.(id);
               }}
-              className={`relative flex flex-col items-center gap-0.5 rounded-2xl px-6 py-2 text-xs font-medium transition-colors ${
+              className={`relative flex flex-col items-center gap-0.5 rounded-2xl px-4 py-2 text-xs font-medium transition-colors ${
                 activo
                   ? "text-emerald-600"
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"
@@ -63,7 +64,7 @@ export default function BottomNav({ pestana, onCambiar }: BottomNavProps) {
 
         <Link
           href="/configuracion"
-          className={`relative flex flex-col items-center gap-0.5 rounded-2xl px-6 py-2 text-xs font-medium transition-colors ${
+          className={`relative flex flex-col items-center gap-0.5 rounded-2xl px-4 py-2 text-xs font-medium transition-colors ${
             enConfig
               ? "text-emerald-600"
               : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200"

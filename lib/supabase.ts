@@ -19,6 +19,7 @@ export interface Producto {
   cantidad: number;
   descripcion: string | null;
   especificaciones: string[] | null;
+  precio: number | null;
   created_at: string;
 }
 

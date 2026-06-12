@@ -11,6 +11,7 @@ export const PRODUCTOS_DEMO: Producto[] = [
     descripcion: "Aceite de primera prensada en frío para cocinar y aliñar.",
     especificaciones: ["Botella de 1 litro", "Virgen extra", "Acidez máx. 0,4º"],
     cantidad: 3,
+    precio: 18000,
     created_at: "2026-06-01T10:00:00Z",
   },
   {
@@ -23,6 +24,7 @@ export const PRODUCTOS_DEMO: Producto[] = [
     descripcion: null,
     especificaciones: null,
     cantidad: 12,
+    precio: 3500,
     created_at: "2026-06-02T09:30:00Z",
   },
   {
@@ -35,6 +37,7 @@ export const PRODUCTOS_DEMO: Producto[] = [
     descripcion: null,
     especificaciones: null,
     cantidad: 5,
+    precio: 5200,
     created_at: "2026-06-03T17:45:00Z",
   },
   {
@@ -47,6 +50,7 @@ export const PRODUCTOS_DEMO: Producto[] = [
     descripcion: null,
     especificaciones: null,
     cantidad: 2,
+    precio: null,
     created_at: "2026-06-05T12:20:00Z",
   },
   {
@@ -59,6 +63,7 @@ export const PRODUCTOS_DEMO: Producto[] = [
     descripcion: null,
     especificaciones: null,
     cantidad: 6,
+    precio: 4800,
     created_at: "2026-06-08T08:10:00Z",
   },
 ];

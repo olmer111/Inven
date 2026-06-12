@@ -7,8 +7,10 @@ import { Barcode, SignOut } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import Inventario from "@/components/Inventario";
 import Pedidos from "@/components/Pedidos";
+import Asistente from "@/components/Asistente";
 import ThemeToggle from "@/components/ThemeToggle";
 import BottomNav from "@/components/BottomNav";
+import BurbujaAsistente from "@/components/BurbujaAsistente";
 import {
   supabase,
   isSupabaseConfigured,
@@ -20,12 +22,19 @@ import {
   obtenerProductos,
   agregarProducto,
   actualizarCantidad,
+  actualizarPrecio,
   eliminarProducto,
   type ProductoEscaneado,
 } from "@/lib/productos";
 import { obtenerPedidos, agregarPedido, eliminarPedido } from "@/lib/pedidos";
 
-type Pestana = "inventario" | "pedidos";
+type Pestana = "inventario" | "pedidos" | "asistente";
+
+const TITULOS: Record<Pestana, string> = {
+  inventario: "Mi inventario",
+  pedidos: "Pedidos de clientes",
+  asistente: "Asistente",
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -100,6 +109,15 @@ export default function DashboardPage() {
     );
   }, []);
 
+  const manejarPrecio = useCallback((id: string, precio: number | null) => {
+    setProductos((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, precio } : p))
+    );
+    actualizarPrecio(id, precio).catch(() =>
+      setError("No se pudo guardar el precio. Vuelve a intentarlo.")
+    );
+  }, []);
+
   const manejarEliminar = useCallback((id: string) => {
     setProductos((prev) => prev.filter((p) => p.id !== id));
     eliminarProducto(id).catch(() =>
@@ -161,7 +179,7 @@ export default function DashboardPage() {
       <main className="mx-auto max-w-3xl px-5 py-8 pb-28">
         <div className="mb-6">
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {pestana === "inventario" ? "Mi inventario" : "Pedidos de clientes"}
+            {TITULOS[pestana]}
           </h1>
         </div>
 
@@ -174,16 +192,18 @@ export default function DashboardPage() {
           </p>
         )}
 
-        {pestana === "inventario" ? (
+        {pestana === "inventario" && (
           <Inventario
             productos={productos}
             plan={plan}
             cargando={cargando}
             onAgregar={manejarAgregar}
             onCambiarCantidad={manejarCantidad}
+            onCambiarPrecio={manejarPrecio}
             onEliminar={manejarEliminar}
           />
-        ) : (
+        )}
+        {pestana === "pedidos" && (
           <Pedidos
             productos={productos}
             pedidos={pedidos}
@@ -191,9 +211,19 @@ export default function DashboardPage() {
             onEliminarPedido={manejarEliminarPedido}
           />
         )}
+        {pestana === "asistente" && (
+          <Asistente
+            productos={productos}
+            pedidos={pedidos}
+            usuario={usuario}
+          />
+        )}
       </main>
 
       <BottomNav pestana={pestana} onCambiar={setPestana} />
+      {pestana !== "asistente" && (
+        <BurbujaAsistente productos={productos} pedidos={pedidos} usuario={usuario} />
+      )}
     </div>
   );
 }

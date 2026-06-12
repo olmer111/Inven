@@ -32,6 +32,7 @@ create table if not exists public.productos (
   cantidad integer not null default 1 check (cantidad >= 0),
   descripcion text,
   especificaciones text[],
+  precio numeric check (precio is null or precio >= 0),
   created_at timestamptz not null default now()
 );
 
@@ -39,7 +40,19 @@ create table if not exists public.productos (
 alter table public.productos add column if not exists descripcion text;
 alter table public.productos add column if not exists especificaciones text[];
 
+-- Migración: precio del producto en pesos colombianos (COP), opcional.
+alter table public.productos
+  add column if not exists precio numeric check (precio is null or precio >= 0);
+
 create index if not exists productos_user_id_idx on public.productos (user_id);
+
+-- Un mismo código no puede repetirse por usuario (la app también lo bloquea).
+-- Si esta línea falla es porque ya tienes códigos duplicados; encuéntralos con:
+--   select user_id, codigo, count(*) from public.productos
+--   group by user_id, codigo having count(*) > 1;
+-- y elimina o corrige los repetidos antes de volver a ejecutar.
+create unique index if not exists productos_user_codigo_unico
+  on public.productos (user_id, codigo);
 
 alter table public.productos enable row level security;
 
@@ -89,6 +102,37 @@ create policy "Los usuarios insertan sus propios pedidos"
 drop policy if exists "Los usuarios eliminan sus propios pedidos" on public.pedidos;
 create policy "Los usuarios eliminan sus propios pedidos"
   on public.pedidos for delete
+  using (auth.uid() = user_id);
+
+-- ── Combos guardados (propuestos por el asistente) ──────────────────────
+create table if not exists public.combos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  nombre text not null,
+  descripcion text,
+  -- items: [{ "producto_id": uuid|null, "nombre": text, "cantidad": int, "precio": numeric|null }]
+  items jsonb not null default '[]'::jsonb,
+  precio_total numeric,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists combos_user_id_idx on public.combos (user_id);
+
+alter table public.combos enable row level security;
+
+drop policy if exists "Los usuarios ven sus propios combos" on public.combos;
+create policy "Los usuarios ven sus propios combos"
+  on public.combos for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "Los usuarios insertan sus propios combos" on public.combos;
+create policy "Los usuarios insertan sus propios combos"
+  on public.combos for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Los usuarios eliminan sus propios combos" on public.combos;
+create policy "Los usuarios eliminan sus propios combos"
+  on public.combos for delete
   using (auth.uid() = user_id);
 
 -- ── Trigger: crear perfil al registrarse ────────────────────────────────

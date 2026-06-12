@@ -7,6 +7,7 @@ export interface ProductoEscaneado {
   imagen_url: string | null;
   descripcion: string | null;
   especificaciones: string[] | null;
+  precio: number | null;
 }
 
 /** Busca un código de barras en Open Food Facts. Devuelve null si no existe. */
@@ -37,6 +38,7 @@ export async function buscarProductoPorCodigo(
       imagen_url: data.product.image_url ?? null,
       descripcion: null,
       especificaciones: null,
+      precio: null,
     };
   } catch {
     return null;
@@ -68,11 +70,17 @@ export async function agregarProducto(
       imagen_url: producto.imagen_url,
       descripcion: producto.descripcion,
       especificaciones: producto.especificaciones,
+      precio: producto.precio,
       cantidad,
     })
     .select()
     .single();
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === "23505") {
+      throw new Error("Este producto ya está en tu inventario.");
+    }
+    throw new Error(error.message);
+  }
   return data;
 }
 
@@ -83,6 +91,17 @@ export async function actualizarCantidad(
   const { error } = await supabase
     .from("productos")
     .update({ cantidad })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+}
+
+export async function actualizarPrecio(
+  id: string,
+  precio: number | null
+): Promise<void> {
+  const { error } = await supabase
+    .from("productos")
+    .update({ precio })
     .eq("id", id);
   if (error) throw new Error(error.message);
 }
@@ -118,13 +137,14 @@ export function exportarCSV(productos: Producto[]): void {
   const escapar = (v: string | number | null) =>
     `"${String(v ?? "").replace(/"/g, '""')}"`;
   const filas = [
-    ["Código", "Nombre", "Categoría", "Cantidad", "Añadido"].join(","),
+    ["Código", "Nombre", "Categoría", "Cantidad", "Precio", "Añadido"].join(","),
     ...productos.map((p) =>
       [
         escapar(p.codigo),
         escapar(p.nombre),
         escapar(p.categoria),
         p.cantidad,
+        p.precio ?? "",
         escapar(new Date(p.created_at).toLocaleDateString("es-ES")),
       ].join(",")
     ),

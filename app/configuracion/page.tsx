@@ -12,6 +12,7 @@ import {
 } from "@phosphor-icons/react";
 import ThemeToggle from "@/components/ThemeToggle";
 import BottomNav from "@/components/BottomNav";
+import BurbujaAsistente from "@/components/BurbujaAsistente";
 import { supabase, isSupabaseConfigured, PLANES, type Plan } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -520,6 +521,7 @@ export default function ConfiguracionPage() {
       </main>
 
       <BottomNav />
+      <BurbujaAsistente usuario={usuario} />
     </div>
   );
 }

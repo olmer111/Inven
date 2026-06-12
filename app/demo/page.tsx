@@ -29,6 +29,7 @@ export default function DemoPage() {
         imagen_url: escaneado.imagen_url,
         descripcion: escaneado.descripcion,
         especificaciones: escaneado.especificaciones,
+        precio: escaneado.precio,
         cantidad,
         created_at: new Date().toISOString(),
       };
@@ -40,6 +41,12 @@ export default function DemoPage() {
   const manejarCantidad = useCallback((id: string, cantidad: number) => {
     setProductos((prev) =>
       prev.map((p) => (p.id === id ? { ...p, cantidad } : p))
+    );
+  }, []);
+
+  const manejarPrecio = useCallback((id: string, precio: number | null) => {
+    setProductos((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, precio } : p))
     );
   }, []);
 
@@ -134,6 +141,7 @@ export default function DemoPage() {
             plan="gratuito"
             onAgregar={manejarAgregar}
             onCambiarCantidad={manejarCantidad}
+            onCambiarPrecio={manejarPrecio}
             onEliminar={manejarEliminar}
           />
         ) : (

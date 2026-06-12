@@ -23,6 +23,7 @@ interface ModalAgregarProductoProps {
   abierto: boolean;
   onCerrar: () => void;
   onAgregar: (producto: ProductoEscaneado, cantidad: number) => Promise<void>;
+  codigosExistentes?: Set<string>;
 }
 
 type Paso =
@@ -49,6 +50,7 @@ export default function ModalAgregarProducto({
   abierto,
   onCerrar,
   onAgregar,
+  codigosExistentes,
 }: ModalAgregarProductoProps) {
   const [paso, setPaso] = useState<Paso>("metodo");
   const [codigoManual, setCodigoManual] = useState("");
@@ -77,6 +79,10 @@ export default function ModalAgregarProducto({
 
   const procesarCodigo = async (codigo: string) => {
     if (buscando) return;
+    if (codigosExistentes?.has(codigo)) {
+      setError("Este producto ya está en tu inventario.");
+      return;
+    }
     setBuscando(true);
     setError(null);
     const encontrado = await buscarProductoPorCodigo(codigo);
@@ -88,6 +94,7 @@ export default function ModalAgregarProducto({
         imagen_url: null,
         descripcion: null,
         especificaciones: null,
+        precio: null,
       }
     );
     setBuscando(false);
@@ -107,6 +114,7 @@ export default function ModalAgregarProducto({
         imagen_url: null,
         descripcion: r.descripcion || null,
         especificaciones: r.especificaciones.length ? r.especificaciones : null,
+        precio: null,
       });
       setPaso("pedir-codigo");
     } catch (e) {
@@ -117,6 +125,11 @@ export default function ModalAgregarProducto({
 
   const asignarCodigo = (codigo: string) => {
     if (!producto) return;
+    if (codigosExistentes?.has(codigo)) {
+      setError("Este producto ya está en tu inventario.");
+      return;
+    }
+    setError(null);
     setProducto({ ...producto, codigo });
     setPaso("confirmar");
   };
@@ -126,6 +139,11 @@ export default function ModalAgregarProducto({
       setError("El producto necesita un nombre.");
       return;
     }
+    const codigoFinal = producto.codigo || generarCodigoInterno();
+    if (codigosExistentes?.has(codigoFinal)) {
+      setError("Este producto ya está en tu inventario.");
+      return;
+    }
     setGuardando(true);
     setError(null);
     try {
@@ -133,7 +151,7 @@ export default function ModalAgregarProducto({
         {
           ...producto,
           nombre: producto.nombre.trim(),
-          codigo: producto.codigo || generarCodigoInterno(),
+          codigo: codigoFinal,
         },
         cantidad
       );
@@ -271,7 +289,7 @@ export default function ModalAgregarProducto({
                         type="text"
                         inputMode="numeric"
                         value={codigoManual}
-                        onChange={(e) => setCodigoManual(e.target.value)}
+                        onChange={(e) => { setCodigoManual(e.target.value); setError(null); }}
                         placeholder="8480000123456"
                         className={`${claseInput} flex-1 font-mono`}
                       />
@@ -291,6 +309,11 @@ export default function ModalAgregarProducto({
                     {buscando && (
                       <p className="text-center text-sm text-zinc-500">
                         Buscando en Open Food Facts…
+                      </p>
+                    )}
+                    {error && (
+                      <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+                        {error}
                       </p>
                     )}
                   </div>
@@ -365,6 +388,11 @@ export default function ModalAgregarProducto({
                       activo={abierto && paso === "pedir-codigo"}
                       onScan={asignarCodigo}
                     />
+                    {error && (
+                      <p role="alert" className="text-sm text-red-600 dark:text-red-400">
+                        {error}
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => setPaso("confirmar")}
@@ -460,6 +488,32 @@ export default function ModalAgregarProducto({
                           {producto.categoria}
                         </span>
                       )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="precio-producto"
+                        className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                      >
+                        Precio{" "}
+                        <span className="font-normal text-zinc-400">(COP, opcional)</span>
+                      </label>
+                      <input
+                        id="precio-producto"
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        step={50}
+                        value={producto.precio ?? ""}
+                        onChange={(e) =>
+                          setProducto({
+                            ...producto,
+                            precio: e.target.value === "" ? null : Math.max(0, Number(e.target.value)),
+                          })
+                        }
+                        placeholder="Ej.: 12000"
+                        className={`${claseInput} font-mono`}
+                      />
                     </div>
 
                     <div className="space-y-1.5">

@@ -25,6 +25,7 @@ interface InventarioProps {
   cargando?: boolean;
   onAgregar: (producto: ProductoEscaneado, cantidad: number) => Promise<void>;
   onCambiarCantidad: (id: string, cantidad: number) => void;
+  onCambiarPrecio: (id: string, precio: number | null) => void;
   onEliminar: (id: string) => void;
 }
 
@@ -34,6 +35,7 @@ export default function Inventario({
   cargando = false,
   onAgregar,
   onCambiarCantidad,
+  onCambiarPrecio,
   onEliminar,
 }: InventarioProps) {
   const [consulta, setConsulta] = useState("");
@@ -42,6 +44,11 @@ export default function Inventario({
   const filtrados = useMemo(
     () => filtrarProductos(productos, consulta),
     [productos, consulta]
+  );
+
+  const codigosExistentes = useMemo(
+    () => new Set(productos.map((p) => p.codigo)),
+    [productos]
   );
 
   const limite = limiteDelPlan(plan);
@@ -173,6 +180,7 @@ export default function Inventario({
               <ProductoCard
                 producto={p}
                 onCambiarCantidad={onCambiarCantidad}
+                onCambiarPrecio={onCambiarPrecio}
                 onEliminar={onEliminar}
               />
             </motion.li>
@@ -184,6 +192,7 @@ export default function Inventario({
         abierto={modalAbierto}
         onCerrar={() => setModalAbierto(false)}
         onAgregar={onAgregar}
+        codigosExistentes={codigosExistentes}
       />
     </div>
   );
