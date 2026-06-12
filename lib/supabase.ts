@@ -68,7 +68,7 @@ const url =
   "https://ylufjnytawsgklikkhhn.supabase.co";
 const anonKey =
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "sb_publishable_iJOMPP732Hoz8qsdadly3w_wpJhSOxF";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdWZqbnl0YXdzZ2tsaWtraGhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMzM0NzYsImV4cCI6MjA5NjgwOTQ3Nn0.obZ9jPqGFE0x5KPzN_w7leT4e-6lNbF2XsLu_T-5HBs";
 
 export const isSupabaseConfigured = true;
 
