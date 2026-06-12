@@ -60,15 +60,16 @@ export const PLANES: Record<
   },
 };
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+// La clave "publishable" de Supabase es pública por diseño (los datos se
+// protegen con RLS), así que puede ir en el código. Las variables de entorno,
+// si existen, tienen prioridad para poder apuntar a otro proyecto.
+const url =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ??
+  "https://ylufjnytawsgklikkhhn.supabase.co";
+const anonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+  "sb_publishable_iJOMPP732Hoz8qsdadly3w_wpJhSOxF";
 
-export const isSupabaseConfigured = Boolean(url && anonKey);
+export const isSupabaseConfigured = true;
 
-// Con placeholders el cliente se construye igualmente para que la app
-// compile y la demo funcione sin variables de entorno; las llamadas
-// reales fallarán hasta configurar .env.local (ver .env.local.example).
-export const supabase: SupabaseClient = createClient(
-  url ?? "https://placeholder.supabase.co",
-  anonKey ?? "placeholder-anon-key"
-);
+export const supabase: SupabaseClient = createClient(url, anonKey);

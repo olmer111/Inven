@@ -11,10 +11,12 @@ create table if not exists public.perfiles (
 
 alter table public.perfiles enable row level security;
 
+drop policy if exists "Los usuarios ven su propio perfil" on public.perfiles;
 create policy "Los usuarios ven su propio perfil"
   on public.perfiles for select
   using (auth.uid() = id);
 
+drop policy if exists "Los usuarios actualizan su propio perfil" on public.perfiles;
 create policy "Los usuarios actualizan su propio perfil"
   on public.perfiles for update
   using (auth.uid() = id);
@@ -41,18 +43,22 @@ create index if not exists productos_user_id_idx on public.productos (user_id);
 
 alter table public.productos enable row level security;
 
+drop policy if exists "Los usuarios ven sus propios productos" on public.productos;
 create policy "Los usuarios ven sus propios productos"
   on public.productos for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Los usuarios insertan sus propios productos" on public.productos;
 create policy "Los usuarios insertan sus propios productos"
   on public.productos for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Los usuarios actualizan sus propios productos" on public.productos;
 create policy "Los usuarios actualizan sus propios productos"
   on public.productos for update
   using (auth.uid() = user_id);
 
+drop policy if exists "Los usuarios eliminan sus propios productos" on public.productos;
 create policy "Los usuarios eliminan sus propios productos"
   on public.productos for delete
   using (auth.uid() = user_id);
@@ -70,14 +76,17 @@ create index if not exists pedidos_user_id_idx on public.pedidos (user_id);
 
 alter table public.pedidos enable row level security;
 
+drop policy if exists "Los usuarios ven sus propios pedidos" on public.pedidos;
 create policy "Los usuarios ven sus propios pedidos"
   on public.pedidos for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Los usuarios insertan sus propios pedidos" on public.pedidos;
 create policy "Los usuarios insertan sus propios pedidos"
   on public.pedidos for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Los usuarios eliminan sus propios pedidos" on public.pedidos;
 create policy "Los usuarios eliminan sus propios pedidos"
   on public.pedidos for delete
   using (auth.uid() = user_id);
