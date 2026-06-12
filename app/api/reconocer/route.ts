@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
+import type { Proveedor } from "@/lib/configuracion";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -28,40 +29,61 @@ const ReconocimientoSchema = z.object({
 
 type MediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
-export async function POST(request: Request) {
-  if (!process.env.ANTHROPIC_API_KEY) {
+const SYSTEM_JSON = `Eres un asistente de inventario de tienda. Analiza la imagen y responde ÚNICAMENTE con un objeto JSON válido con este esquema exacto, sin texto adicional:
+{"reconocido":boolean,"nombre":"string","categoria":"string","descripcion":"string","especificaciones":["string"]}
+Donde:
+- reconocido: false si no hay un producto claro en la imagen
+- nombre: nombre comercial en español
+- categoria: categoría corta en minúsculas (ej. "bebidas", "limpieza", "alimentación")
+- descripcion: qué es y para qué sirve, 1-2 frases en español para un cliente
+- especificaciones: array con 3-5 specs visibles (tamaño, material, marca, variante, etc.)`;
+
+function extraerJSON(texto: string): Record<string, unknown> {
+  try {
+    return JSON.parse(texto.trim());
+  } catch {}
+  const match = texto.match(/\{[\s\S]*\}/);
+  if (match) {
+    try {
+      return JSON.parse(match[0]);
+    } catch {}
+  }
+  throw new Error("Sin JSON válido en la respuesta");
+}
+
+function normalizar(raw: Record<string, unknown>) {
+  return {
+    reconocido: Boolean(raw.reconocido),
+    nombre: String(raw.nombre || "Producto desconocido"),
+    categoria: String(raw.categoria || ""),
+    descripcion: String(raw.descripcion || ""),
+    especificaciones: Array.isArray(raw.especificaciones)
+      ? raw.especificaciones.map(String)
+      : [],
+  };
+}
+
+async function usarAnthropic(
+  datos: string,
+  mediaType: MediaType,
+  modelo: string,
+  apiKey?: string
+): Promise<NextResponse> {
+  const clave = apiKey || process.env.ANTHROPIC_API_KEY;
+  if (!clave) {
     return NextResponse.json(
       {
         error:
-          "El reconocimiento por IA no está configurado. Añade ANTHROPIC_API_KEY a .env.local.",
+          "Sin clave API de Anthropic. Añádela en Configuración → Modelo de IA, o configura ANTHROPIC_API_KEY en el servidor.",
       },
       { status: 503 }
     );
   }
 
-  let imagen: string;
-  try {
-    const body = await request.json();
-    imagen = body.imagen;
-    if (typeof imagen !== "string" || !imagen.startsWith("data:image/")) {
-      throw new Error();
-    }
-  } catch {
-    return NextResponse.json(
-      { error: "Envía la imagen como data URL en el campo «imagen»." },
-      { status: 400 }
-    );
-  }
-
-  const [cabecera, datos] = imagen.split(",", 2);
-  const mediaType = (cabecera.match(/^data:(image\/(?:jpeg|png|webp|gif))/)?.[1] ??
-    "image/jpeg") as MediaType;
-
-  const client = new Anthropic();
-
+  const client = new Anthropic({ apiKey: clave });
   try {
     const response = await client.messages.parse({
-      model: "claude-opus-4-8",
+      model: modelo,
       max_tokens: 2048,
       messages: [
         {
@@ -73,14 +95,12 @@ export async function POST(request: Request) {
             },
             {
               type: "text",
-              text: "Identifica el producto de la foto para el inventario de una tienda. Si no hay un producto claro, marca reconocido=false y deja los demás campos con tu mejor aproximación.",
+              text: "Identifica el producto de la foto para el inventario de una tienda. Si no hay un producto claro, marca reconocido=false.",
             },
           ],
         },
       ],
-      output_config: {
-        format: zodOutputFormat(ReconocimientoSchema),
-      },
+      output_config: { format: zodOutputFormat(ReconocimientoSchema) },
     });
 
     if (response.stop_reason === "refusal" || !response.parsed_output) {
@@ -89,7 +109,6 @@ export async function POST(request: Request) {
         { status: 422 }
       );
     }
-
     return NextResponse.json(response.parsed_output);
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) {
@@ -100,7 +119,7 @@ export async function POST(request: Request) {
     }
     if (e instanceof Anthropic.APIError) {
       return NextResponse.json(
-        { error: `Error del servicio de IA (${e.status}). Inténtalo de nuevo.` },
+        { error: `Error de Anthropic (${e.status}). Inténtalo de nuevo.` },
         { status: 502 }
       );
     }
@@ -109,4 +128,140 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+}
+
+async function usarOAICompat(
+  imagenDataUrl: string,
+  modelo: string,
+  apiBase: string,
+  apiKey?: string,
+  extraHeaders?: Record<string, string>
+): Promise<NextResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...extraHeaders,
+  };
+  if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+  let res: Response;
+  try {
+    res = await fetch(`${apiBase}/chat/completions`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        model: modelo,
+        messages: [
+          { role: "system", content: SYSTEM_JSON },
+          {
+            role: "user",
+            content: [
+              { type: "image_url", image_url: { url: imagenDataUrl } },
+              {
+                type: "text",
+                text: "Identifica este producto para el inventario de una tienda.",
+              },
+            ],
+          },
+        ],
+        max_tokens: 1024,
+        temperature: 0.1,
+      }),
+      signal: AbortSignal.timeout(55000),
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Error de red";
+    return NextResponse.json(
+      { error: `No se pudo conectar al proveedor: ${msg}` },
+      { status: 502 }
+    );
+  }
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    return NextResponse.json(
+      { error: `Error del proveedor (${res.status}): ${errText.slice(0, 200)}` },
+      { status: 502 }
+    );
+  }
+
+  let completion: { choices?: { message?: { content?: string } }[] };
+  try {
+    completion = await res.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Respuesta inválida del proveedor." },
+      { status: 502 }
+    );
+  }
+
+  const content = completion.choices?.[0]?.message?.content;
+  if (!content) {
+    return NextResponse.json(
+      { error: "El modelo no devolvió contenido." },
+      { status: 502 }
+    );
+  }
+
+  try {
+    return NextResponse.json(normalizar(extraerJSON(content)));
+  } catch {
+    return NextResponse.json(
+      { error: "El modelo no devolvió JSON válido. Prueba con otro modelo." },
+      { status: 502 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  let imagen: string;
+  let proveedor: Proveedor = "anthropic";
+  let modelo = "claude-opus-4-8";
+  let apiKey: string | undefined;
+  let baseUrl: string | undefined;
+
+  try {
+    const body = await request.json();
+    imagen = body.imagen;
+    if (typeof imagen !== "string" || !imagen.startsWith("data:image/")) {
+      throw new Error();
+    }
+    if (body.proveedor) proveedor = body.proveedor;
+    if (body.modelo) modelo = body.modelo;
+    if (body.apiKey) apiKey = body.apiKey;
+    if (body.baseUrl) baseUrl = body.baseUrl;
+  } catch {
+    return NextResponse.json(
+      { error: "Envía la imagen como data URL en el campo «imagen»." },
+      { status: 400 }
+    );
+  }
+
+  if (proveedor === "ollama") {
+    const base =
+      (baseUrl ?? "http://localhost:11434").replace(/\/+$/, "") + "/v1";
+    return usarOAICompat(imagen, modelo, base);
+  }
+
+  if (proveedor === "openrouter") {
+    if (!apiKey) {
+      return NextResponse.json(
+        {
+          error:
+            "Necesitas una clave API de OpenRouter. Configúrala en Configuración → Modelo de IA.",
+        },
+        { status: 503 }
+      );
+    }
+    return usarOAICompat(imagen, modelo, "https://openrouter.ai/api/v1", apiKey, {
+      "HTTP-Referer": "https://stockscan.app",
+      "X-Title": "StockScan",
+    });
+  }
+
+  // Anthropic (default)
+  const [cabecera, datos] = imagen.split(",", 2);
+  const mediaType = (cabecera.match(
+    /^data:(image\/(?:jpeg|png|webp|gif))/
+  )?.[1] ?? "image/jpeg") as MediaType;
+  return usarAnthropic(datos, mediaType, modelo, apiKey);
 }

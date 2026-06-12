@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
-import { Barcode, SignOut } from "@phosphor-icons/react";
+import { Barcode, Gear, SignOut } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import Inventario from "@/components/Inventario";
 import Pedidos from "@/components/Pedidos";
@@ -141,6 +141,13 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <Link
+              href="/configuracion"
+              aria-label="Configuración"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-600 dark:text-zinc-400 transition duration-150 ease-out hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
+            >
+              <Gear size={18} />
+            </Link>
             {usuario && (
               <span className="hidden max-w-[24ch] truncate text-sm text-zinc-500 sm:block">
                 {usuario.email}
