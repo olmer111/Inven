@@ -63,9 +63,16 @@ function normalizar(raw: Record<string, unknown>) {
   };
 }
 
+function separarDataUrl(imagen: string): { datos: string; mediaType: MediaType } {
+  const [cabecera, datos] = imagen.split(",", 2);
+  const mediaType = (cabecera.match(
+    /^data:(image\/(?:jpeg|png|webp|gif))/
+  )?.[1] ?? "image/jpeg") as MediaType;
+  return { datos, mediaType };
+}
+
 async function usarAnthropic(
-  datos: string,
-  mediaType: MediaType,
+  imagenes: string[],
   modelo: string,
   apiKey?: string
 ): Promise<NextResponse> {
@@ -89,13 +96,23 @@ async function usarAnthropic(
         {
           role: "user",
           content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: mediaType, data: datos },
-            },
+            ...imagenes.map((img) => {
+              const { datos, mediaType } = separarDataUrl(img);
+              return {
+                type: "image" as const,
+                source: {
+                  type: "base64" as const,
+                  media_type: mediaType,
+                  data: datos,
+                },
+              };
+            }),
             {
               type: "text",
-              text: "Identifica el producto de la foto para el inventario de una tienda. Si no hay un producto claro, marca reconocido=false.",
+              text:
+                imagenes.length > 1
+                  ? "Las fotos muestran EL MISMO producto desde distintos ángulos. Identifícalo para el inventario de una tienda combinando la información de todas. Si no hay un producto claro, marca reconocido=false."
+                  : "Identifica el producto de la foto para el inventario de una tienda. Si no hay un producto claro, marca reconocido=false.",
             },
           ],
         },
@@ -131,7 +148,7 @@ async function usarAnthropic(
 }
 
 async function usarOAICompat(
-  imagenDataUrl: string,
+  imagenes: string[],
   modelo: string,
   apiBase: string,
   apiKey?: string,
@@ -155,10 +172,16 @@ async function usarOAICompat(
           {
             role: "user",
             content: [
-              { type: "image_url", image_url: { url: imagenDataUrl } },
+              ...imagenes.map((url) => ({
+                type: "image_url" as const,
+                image_url: { url },
+              })),
               {
                 type: "text",
-                text: "Identifica este producto para el inventario de una tienda.",
+                text:
+                  imagenes.length > 1
+                    ? "Las fotos muestran el mismo producto desde varios ángulos. Identifícalo para el inventario de una tienda."
+                    : "Identifica este producto para el inventario de una tienda.",
               },
             ],
           },
@@ -232,7 +255,7 @@ async function usarOAICompat(
 }
 
 export async function POST(request: Request) {
-  let imagen: string;
+  let imagenes: string[];
   let proveedor: Proveedor = "anthropic";
   let modelo = "claude-opus-4-8";
   let apiKey: string | undefined;
@@ -240,10 +263,16 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json();
-    imagen = body.imagen;
-    if (typeof imagen !== "string" || !imagen.startsWith("data:image/")) {
+    const lista: unknown[] = Array.isArray(body.imagenes)
+      ? body.imagenes
+      : [body.imagen];
+    if (
+      lista.length === 0 ||
+      lista.some((i) => typeof i !== "string" || !i.startsWith("data:image/"))
+    ) {
       throw new Error();
     }
+    imagenes = (lista as string[]).slice(0, 3);
     if (body.proveedor) proveedor = body.proveedor;
     if (body.modelo) modelo = body.modelo;
     if (body.apiKey) apiKey = body.apiKey;
@@ -258,7 +287,7 @@ export async function POST(request: Request) {
   if (proveedor === "ollama") {
     const base =
       (baseUrl ?? "http://localhost:11434").replace(/\/+$/, "") + "/v1";
-    return usarOAICompat(imagen, modelo, base);
+    return usarOAICompat(imagenes, modelo, base);
   }
 
   if (proveedor === "openrouter") {
@@ -272,16 +301,11 @@ export async function POST(request: Request) {
         { status: 503 }
       );
     }
-    return usarOAICompat(imagen, modelo, "https://openrouter.ai/api/v1", clave, {
+    return usarOAICompat(imagenes, modelo, "https://openrouter.ai/api/v1", clave, {
       "HTTP-Referer": "https://stockscan.app",
       "X-Title": "StockScan",
     });
   }
 
-  // Anthropic (default)
-  const [cabecera, datos] = imagen.split(",", 2);
-  const mediaType = (cabecera.match(
-    /^data:(image\/(?:jpeg|png|webp|gif))/
-  )?.[1] ?? "image/jpeg") as MediaType;
-  return usarAnthropic(datos, mediaType, modelo, apiKey);
+  return usarAnthropic(imagenes, modelo, apiKey);
 }
