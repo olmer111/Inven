@@ -5,6 +5,8 @@ export interface ProductoEscaneado {
   nombre: string;
   categoria: string | null;
   imagen_url: string | null;
+  descripcion: string | null;
+  especificaciones: string[] | null;
 }
 
 /** Busca un código de barras en Open Food Facts. Devuelve null si no existe. */
@@ -33,6 +35,8 @@ export async function buscarProductoPorCodigo(
       nombre: data.product.product_name || `Producto ${codigo}`,
       categoria,
       imagen_url: data.product.image_url ?? null,
+      descripcion: null,
+      especificaciones: null,
     };
   } catch {
     return null;
@@ -62,6 +66,8 @@ export async function agregarProducto(
       nombre: producto.nombre,
       categoria: producto.categoria,
       imagen_url: producto.imagen_url,
+      descripcion: producto.descripcion,
+      especificaciones: producto.especificaciones,
       cantidad,
     })
     .select()

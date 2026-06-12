@@ -1,10 +1,18 @@
 @import "tailwindcss";
 
-/* Tema único (claro) bloqueado a nivel de página.
+/* Modo oscuro por clase .dark en <html> (ThemeToggle + script en layout). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tema claro/oscuro con tokens.
    Regla de radios: botones = pill, cards = 16px, inputs = 8px. */
 :root {
   --background: #fafafa;
   --foreground: #18181b;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #fafafa;
 }
 
 @theme inline {

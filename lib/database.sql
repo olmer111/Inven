@@ -28,8 +28,14 @@ create table if not exists public.productos (
   categoria text,
   imagen_url text,
   cantidad integer not null default 1 check (cantidad >= 0),
+  descripcion text,
+  especificaciones text[],
   created_at timestamptz not null default now()
 );
+
+-- Migración para instalaciones anteriores a la columna de descripción:
+alter table public.productos add column if not exists descripcion text;
+alter table public.productos add column if not exists especificaciones text[];
 
 create index if not exists productos_user_id_idx on public.productos (user_id);
 
@@ -49,6 +55,31 @@ create policy "Los usuarios actualizan sus propios productos"
 
 create policy "Los usuarios eliminan sus propios productos"
   on public.productos for delete
+  using (auth.uid() = user_id);
+
+-- ── Pedidos pendientes (recordatorios de compra) ────────────────────────
+create table if not exists public.pedidos (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id) on delete cascade,
+  nombre text not null,
+  notas text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists pedidos_user_id_idx on public.pedidos (user_id);
+
+alter table public.pedidos enable row level security;
+
+create policy "Los usuarios ven sus propios pedidos"
+  on public.pedidos for select
+  using (auth.uid() = user_id);
+
+create policy "Los usuarios insertan sus propios pedidos"
+  on public.pedidos for insert
+  with check (auth.uid() = user_id);
+
+create policy "Los usuarios eliminan sus propios pedidos"
+  on public.pedidos for delete
   using (auth.uid() = user_id);
 
 -- ── Trigger: crear perfil al registrarse ────────────────────────────────

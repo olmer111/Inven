@@ -57,9 +57,9 @@ export default function Scanner({ onScan, activo }: ScannerProps) {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 px-6 py-10 text-center">
+      <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800/50 px-6 py-10 text-center">
         <CameraSlash size={32} weight="duotone" className="text-zinc-400" />
-        <p className="text-sm text-zinc-600 max-w-[36ch]">{error}</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 max-w-[36ch]">{error}</p>
       </div>
     );
   }

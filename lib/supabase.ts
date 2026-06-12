@@ -17,6 +17,17 @@ export interface Producto {
   categoria: string | null;
   imagen_url: string | null;
   cantidad: number;
+  descripcion: string | null;
+  especificaciones: string[] | null;
+  created_at: string;
+}
+
+/** Producto que un cliente pidió y no tenemos: recordatorio de compra. */
+export interface Pedido {
+  id: string;
+  user_id: string;
+  nombre: string;
+  notas: string | null;
   created_at: string;
 }
 
