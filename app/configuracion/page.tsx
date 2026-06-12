@@ -5,13 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Barcode,
-  ArrowLeft,
   Check,
   CircleNotch,
   Plugs,
   SignOut,
 } from "@phosphor-icons/react";
 import ThemeToggle from "@/components/ThemeToggle";
+import BottomNav from "@/components/BottomNav";
 import { supabase, isSupabaseConfigured, PLANES, type Plan } from "@/lib/supabase";
 import type { User } from "@supabase/supabase-js";
 import {
@@ -179,19 +179,10 @@ export default function ConfiguracionPage() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-8 space-y-6">
-        <div>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-1.5 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-          >
-            <ArrowLeft size={15} />
-            Volver al dashboard
-          </Link>
-          <h1 className="mt-4 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Configuración
-          </h1>
-        </div>
+      <main className="mx-auto max-w-3xl px-5 py-8 pb-28 space-y-6">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          Configuración
+        </h1>
 
         {/* Cuenta */}
         <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6">
@@ -527,6 +518,8 @@ export default function ConfiguracionPage() {
           </div>
         </section>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

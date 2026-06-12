@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "motion/react";
-import { Barcode, Gear, SignOut } from "@phosphor-icons/react";
+import { Barcode, SignOut } from "@phosphor-icons/react";
 import type { User } from "@supabase/supabase-js";
 import Inventario from "@/components/Inventario";
 import Pedidos from "@/components/Pedidos";
 import ThemeToggle from "@/components/ThemeToggle";
+import BottomNav from "@/components/BottomNav";
 import {
   supabase,
   isSupabaseConfigured,
@@ -141,13 +141,6 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <Link
-              href="/configuracion"
-              aria-label="Configuración"
-              className="flex h-9 w-9 items-center justify-center rounded-full text-zinc-600 dark:text-zinc-400 transition duration-150 ease-out hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100"
-            >
-              <Gear size={18} />
-            </Link>
             {usuario && (
               <span className="hidden max-w-[24ch] truncate text-sm text-zinc-500 sm:block">
                 {usuario.email}
@@ -165,39 +158,11 @@ export default function DashboardPage() {
         </nav>
       </header>
 
-      <main className="mx-auto max-w-3xl px-5 py-8">
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <main className="mx-auto max-w-3xl px-5 py-8 pb-28">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
             {pestana === "inventario" ? "Mi inventario" : "Pedidos de clientes"}
           </h1>
-          <div className="flex rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-1">
-            {(
-              [
-                ["inventario", "Inventario"],
-                ["pedidos", "Pedidos"],
-              ] as [Pestana, string][]
-            ).map(([clave, etiqueta]) => (
-              <button
-                key={clave}
-                type="button"
-                onClick={() => setPestana(clave)}
-                className={`relative rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                  pestana === clave
-                    ? "text-white"
-                    : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
-                }`}
-              >
-                {pestana === clave && (
-                  <motion.span
-                    layoutId="pestana-activa"
-                    transition={{ type: "spring", stiffness: 400, damping: 35 }}
-                    className="absolute inset-0 rounded-full bg-emerald-600"
-                  />
-                )}
-                <span className="relative">{etiqueta}</span>
-              </button>
-            ))}
-          </div>
         </div>
 
         {error && (
@@ -227,6 +192,8 @@ export default function DashboardPage() {
           />
         )}
       </main>
+
+      <BottomNav pestana={pestana} onCambiar={setPestana} />
     </div>
   );
 }

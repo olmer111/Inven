@@ -1,10 +1,9 @@
 "use client";
 
-import ThemeToggle from "@/components/ThemeToggle";
 import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Barcode, CircleNotch, Check } from "@phosphor-icons/react";
+import { CircleNotch, Check } from "@phosphor-icons/react";
 import { supabase, isSupabaseConfigured, PLANES, type Plan } from "@/lib/supabase";
 
 function esPlan(valor: string | null): valor is Plan {
@@ -52,7 +51,6 @@ function FormularioRegistro() {
     if (data.session) {
       router.push("/dashboard");
     } else {
-      // Confirmación por email activada en Supabase.
       setRegistrado(true);
       setEnviando(false);
     }
@@ -60,18 +58,22 @@ function FormularioRegistro() {
 
   if (registrado) {
     return (
-      <div className="w-full max-w-sm rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-7 text-center">
-        <Check size={32} weight="bold" className="mx-auto text-emerald-600" />
-        <h1 className="mt-4 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Revisa tu correo
-        </h1>
-        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          Te hemos enviado un enlace para confirmar la cuenta. Después podrás
-          iniciar sesión.
-        </p>
+      <div className="w-full max-w-sm space-y-5 text-center">
+        <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600/10">
+          <Check size={28} weight="bold" className="text-emerald-600" />
+        </span>
+        <div>
+          <h1 className="text-xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+            Revisa tu correo
+          </h1>
+          <p className="mt-2 text-sm text-zinc-500">
+            Te hemos enviado un enlace para confirmar la cuenta. Después podrás
+            iniciar sesión.
+          </p>
+        </div>
         <Link
           href="/auth/login"
-          className="mt-6 inline-block rounded-full bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-zinc-700"
+          className="inline-block rounded-full bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition duration-150 ease-out hover:bg-emerald-700 active:scale-[0.98]"
         >
           Ir a iniciar sesión
         </Link>
@@ -80,27 +82,31 @@ function FormularioRegistro() {
   }
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-7">
-      <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-        Crear cuenta
-      </h1>
-      <p className="mt-1.5 text-sm text-zinc-500">
-        Elige un plan y empieza a escanear. Sin tarjeta en el plan Gratuito.
-      </p>
+    <div className="w-full max-w-sm space-y-7">
+      <div>
+        <h1 className="text-2xl font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+          Crear cuenta
+        </h1>
+        <p className="mt-1.5 text-sm text-zinc-500">
+          Elige un plan y empieza a escanear. Sin tarjeta en el plan Gratuito.
+        </p>
+      </div>
 
-      <form onSubmit={registrar} className="mt-6 space-y-4">
+      <form onSubmit={registrar} className="space-y-4">
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium text-zinc-700 dark:text-zinc-300">Plan</legend>
+          <legend className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+            Plan
+          </legend>
           {(Object.keys(PLANES) as Plan[]).map((clave) => {
             const p = PLANES[clave];
             const activo = plan === clave;
             return (
               <label
                 key={clave}
-                className={`flex cursor-pointer items-center justify-between rounded-lg border px-4 py-3 transition-colors ${
+                className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 transition-colors ${
                   activo
-                    ? "border-emerald-600 bg-emerald-600/5 ring-2 ring-emerald-600/20"
-                    : "border-zinc-300 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500"
+                    ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-600/10 ring-2 ring-emerald-500/20"
+                    : "border-zinc-200 dark:border-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                 }`}
               >
                 <span className="flex items-center gap-3">
@@ -114,23 +120,21 @@ function FormularioRegistro() {
                   />
                   <span
                     aria-hidden
-                    className={`flex h-4 w-4 items-center justify-center rounded-full border ${
+                    className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
                       activo
                         ? "border-emerald-600 bg-emerald-600"
-                        : "border-zinc-300 dark:border-zinc-700"
+                        : "border-zinc-300 dark:border-zinc-600"
                     }`}
                   >
                     {activo && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-zinc-900" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-white" />
                     )}
                   </span>
                   <span className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
                     {p.nombre}
                   </span>
-                  <span className="text-xs text-zinc-500">
-                    {p.limite === null
-                      ? "Ilimitado"
-                      : `${p.limite} productos`}
+                  <span className="text-xs text-zinc-400">
+                    {p.limite === null ? "Ilimitado" : `${p.limite} productos`}
                   </span>
                 </span>
                 <span className="font-mono text-sm tabular-nums text-zinc-700 dark:text-zinc-300">
@@ -151,7 +155,10 @@ function FormularioRegistro() {
         </fieldset>
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+          <label
+            htmlFor="email"
+            className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+          >
             Email
           </label>
           <input
@@ -162,7 +169,7 @@ function FormularioRegistro() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="tu@email.com"
-            className="h-11 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-sm text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+            className="h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 text-sm text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
           />
         </div>
 
@@ -182,7 +189,7 @@ function FormularioRegistro() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Mínimo 6 caracteres"
-            className="h-11 w-full rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 text-sm text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"
+            className="h-11 w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3.5 text-sm text-zinc-900 dark:text-zinc-50 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-colors"
           />
         </div>
 
@@ -195,41 +202,30 @@ function FormularioRegistro() {
         <button
           type="submit"
           disabled={enviando}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-medium text-white transition duration-150 ease-out hover:bg-emerald-700 disabled:opacity-50 active:scale-[0.98]"
+          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-semibold text-white transition duration-150 ease-out hover:bg-emerald-700 disabled:opacity-50 active:scale-[0.98]"
         >
           {enviando && <CircleNotch size={16} className="animate-spin" />}
           Crear cuenta
         </button>
       </form>
+
+      <p className="text-center text-sm text-zinc-500">
+        ¿Ya tienes cuenta?{" "}
+        <Link
+          href="/auth/login"
+          className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline"
+        >
+          Iniciar sesión
+        </Link>
+      </p>
     </div>
   );
 }
 
 export default function RegisterPage() {
   return (
-    <div className="relative flex min-h-[100dvh] flex-col items-center justify-center px-5 py-12">
-      <div className="absolute right-4 top-4"><ThemeToggle /></div>
-      <Link
-        href="/"
-        className="mb-8 flex items-center gap-2 font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
-      >
-        <Barcode size={24} weight="bold" className="text-emerald-600" />
-        StockScan
-      </Link>
-
-      <Suspense fallback={null}>
-        <FormularioRegistro />
-      </Suspense>
-
-      <p className="mt-6 text-sm text-zinc-500">
-        ¿Ya tienes cuenta?{" "}
-        <Link
-          href="/auth/login"
-          className="font-medium text-emerald-700 dark:text-emerald-400 hover:underline"
-        >
-          Iniciar sesión
-        </Link>
-      </p>
-    </div>
+    <Suspense fallback={null}>
+      <FormularioRegistro />
+    </Suspense>
   );
 }
