@@ -3,6 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { Proveedor } from "@/lib/configuracion";
+import { TODAS_LAS_CATEGORIAS } from "@/lib/categorias";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,14 +30,17 @@ const ReconocimientoSchema = z.object({
 
 type MediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
+const LISTA_CATEGORIAS = TODAS_LAS_CATEGORIAS.join(" | ");
+
 const SYSTEM_JSON = `Eres un asistente de inventario de tienda. Analiza la imagen y responde ÚNICAMENTE con un objeto JSON válido con este esquema exacto, sin texto adicional:
 {"reconocido":boolean,"nombre":"string","categoria":"string","descripcion":"string","especificaciones":["string"]}
 Donde:
 - reconocido: false si no hay un producto claro en la imagen
-- nombre: nombre comercial en español
-- categoria: categoría corta en minúsculas (ej. "bebidas", "limpieza", "alimentación")
+- nombre: nombre comercial completo en español
+- categoria: DEBES elegir EXACTAMENTE una de estas categorías (copia el texto exacto):
+  ${LISTA_CATEGORIAS}
 - descripcion: qué es y para qué sirve, 1-2 frases en español para un cliente
-- especificaciones: array con 3-5 specs visibles (tamaño, material, marca, variante, etc.)`;
+- especificaciones: array con 3-5 specs visibles (tamaño, material, marca, variante, dosis, etc.)`;
 
 function extraerJSON(texto: string): Record<string, unknown> {
   try {

@@ -39,12 +39,22 @@ export default function Inventario({
   onEliminar,
 }: InventarioProps) {
   const [consulta, setConsulta] = useState("");
+  const [categoriaFiltro, setCategoriaFiltro] = useState<string | null>(null);
   const [modalAbierto, setModalAbierto] = useState(false);
 
-  const filtrados = useMemo(
-    () => filtrarProductos(productos, consulta),
-    [productos, consulta]
-  );
+  const categoriasActivas = useMemo(() => {
+    const set = new Set<string>();
+    productos.forEach((p) => { if (p.categoria) set.add(p.categoria); });
+    return [...set].sort((a, b) => a.localeCompare(b, "es"));
+  }, [productos]);
+
+  const filtrados = useMemo(() => {
+    let lista = filtrarProductos(productos, consulta);
+    if (categoriaFiltro) {
+      lista = lista.filter((p) => p.categoria === categoriaFiltro);
+    }
+    return lista;
+  }, [productos, consulta, categoriaFiltro]);
 
   const productosPorCodigo = useMemo(
     () => new Map(productos.map((p) => [p.codigo, p])),
@@ -100,6 +110,38 @@ export default function Inventario({
           </button>
         </div>
       </div>
+
+      {categoriasActivas.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+          <button
+            type="button"
+            onClick={() => setCategoriaFiltro(null)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              categoriaFiltro === null
+                ? "bg-emerald-600 text-white"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            }`}
+          >
+            Todos
+          </button>
+          {categoriasActivas.map((cat) => (
+            <button
+              key={cat}
+              type="button"
+              onClick={() =>
+                setCategoriaFiltro((prev) => (prev === cat ? null : cat))
+              }
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium capitalize transition-colors ${
+                categoriaFiltro === cat
+                  ? "bg-emerald-600 text-white"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+      )}
 
       {limite !== null && (
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">

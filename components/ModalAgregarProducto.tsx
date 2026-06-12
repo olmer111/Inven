@@ -19,45 +19,10 @@ import {
 } from "@/lib/productos";
 import { reconocerProducto, generarCodigoInterno } from "@/lib/reconocer";
 import { formatearCOP } from "@/lib/moneda";
+import { normalizarCategoria, TODAS_LAS_CATEGORIAS } from "@/lib/categorias";
 import type { Producto } from "@/lib/supabase";
 
 const MAX_FOTOS = 3;
-
-const CATEGORIAS = [
-  "aceites y vinagres",
-  "arroz y cereales",
-  "bebidas",
-  "carnes y embutidos",
-  "condimentos y salsas",
-  "conservas",
-  "confitería",
-  "electrónica",
-  "ferretería",
-  "frutas y verduras",
-  "galletas y snacks",
-  "harinas y masas",
-  "higiene personal",
-  "lácteos",
-  "legumbres y granos",
-  "limpieza del hogar",
-  "mascotas",
-  "medicamentos",
-  "panadería y repostería",
-  "papelería",
-  "pasta y fideos",
-  "ropa y accesorios",
-  "suplementos",
-  "otros",
-] as const;
-
-function normalizarCategoria(cat: string | null): string {
-  if (!cat) return "otros";
-  const c = cat.toLowerCase();
-  return (
-    CATEGORIAS.find((k) => c.includes(k) || k.includes(c.split(" ")[0])) ??
-    "otros"
-  );
-}
 
 interface ModalAgregarProductoProps {
   abierto: boolean;
@@ -600,7 +565,7 @@ export default function ModalAgregarProducto({
                         }
                         className={`${claseInput} capitalize`}
                       >
-                        {CATEGORIAS.map((c) => (
+                        {TODAS_LAS_CATEGORIAS.map((c) => (
                           <option key={c} value={c} className="capitalize">
                             {c.charAt(0).toUpperCase() + c.slice(1)}
                           </option>
