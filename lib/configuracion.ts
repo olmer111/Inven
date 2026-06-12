@@ -32,7 +32,7 @@ export const MODELOS_OPENROUTER = [
 const CLAVE_LOCAL = "stockscan_ia_v2";
 
 export const CONFIG_DEFAULTS: ConfigIA = {
-  proveedor: "anthropic",
+  proveedor: "openrouter",
   anthropic: { modelo: "claude-opus-4-8", apiKey: "" },
   ollama: { modelo: "llava", baseUrl: "http://localhost:11434" },
   openrouter: { modelo: "google/gemini-2.0-flash-exp:free", apiKey: "" },

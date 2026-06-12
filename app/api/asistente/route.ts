@@ -210,13 +210,14 @@ export async function POST(request: Request) {
   }
 
   if (proveedor === "openrouter") {
-    if (!apiKey) {
+    const clave = apiKey || process.env.OPENROUTER_API_KEY;
+    if (!clave) {
       return NextResponse.json(
-        { error: "Necesitas una clave API de OpenRouter. Configúrala en Configuración → Modelo de IA." },
+        { error: "Necesitas una clave API de OpenRouter. Configúrala en Configuración → Modelo de IA, o añade OPENROUTER_API_KEY en el servidor." },
         { status: 503 }
       );
     }
-    return usarOAICompat(mensajes, systemPrompt, modelo, "https://openrouter.ai/api/v1", apiKey, {
+    return usarOAICompat(mensajes, systemPrompt, modelo, "https://openrouter.ai/api/v1", clave, {
       "HTTP-Referer": "https://stockscan.app",
       "X-Title": "StockScan",
     });
