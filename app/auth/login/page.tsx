@@ -18,7 +18,7 @@ export default function LoginPage() {
     e.preventDefault();
     if (!isSupabaseConfigured) {
       setError(
-        "Supabase no está configurado. Copia .env.local.example a .env.local con tus claves."
+        "Supabase no está configurado. En local: copia .env.local.example a .env.local. En Vercel: añade las variables en Settings → Environment Variables y redespliega."
       );
       return;
     }
