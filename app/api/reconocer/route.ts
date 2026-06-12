@@ -178,8 +178,27 @@ async function usarOAICompat(
 
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
+    // Los proveedores devuelven JSON con el mensaje anidado; lo extraemos
+    // para mostrar algo legible en la interfaz.
+    let detalle = errText.slice(0, 200);
+    try {
+      const parsed = JSON.parse(errText);
+      detalle =
+        parsed?.error?.message ?? parsed?.message ?? detalle;
+    } catch {}
+    if (res.status === 404) {
+      detalle += " — Elige otro modelo en Configuración → Modelo de IA.";
+    }
+    if (res.status === 401) {
+      detalle =
+        "Clave API no válida. Vuelve a conectar el proveedor en Configuración.";
+    }
+    if (res.status === 429) {
+      detalle =
+        "Límite de uso alcanzado en este modelo. Espera un poco o elige otro modelo en Configuración.";
+    }
     return NextResponse.json(
-      { error: `Error del proveedor (${res.status}): ${errText.slice(0, 200)}` },
+      { error: `Error del proveedor: ${detalle}` },
       { status: 502 }
     );
   }
