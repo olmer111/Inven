@@ -62,15 +62,19 @@ export const PLANES: Record<
   },
 };
 
-// La clave "publishable" de Supabase es pública por diseño (los datos se
-// protegen con RLS), así que puede ir en el código. Las variables de entorno,
-// si existen, tienen prioridad para poder apuntar a otro proyecto.
-const url =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://ylufjnytawsgklikkhhn.supabase.co";
-const anonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdWZqbnl0YXdzZ2tsaWtraGhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMzM0NzYsImV4cCI6MjA5NjgwOTQ3Nn0.obZ9jPqGFE0x5KPzN_w7leT4e-6lNbF2XsLu_T-5HBs";
+// La clave anónima de Supabase es pública por diseño (los datos se protegen
+// con RLS), así que puede ir en el código. Las variables de entorno solo se
+// usan si vienen LAS DOS y la clave tiene el formato JWT (eyJ…) que acepta
+// supabase-js: integraciones como la de Vercel inyectan claves nuevas
+// (sb_publishable_…) que romperían el login si las usáramos.
+const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const usarEnv = Boolean(envUrl && envKey && envKey.startsWith("eyJ"));
+
+const url = usarEnv ? envUrl! : "https://ylufjnytawsgklikkhhn.supabase.co";
+const anonKey = usarEnv
+  ? envKey!
+  : "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsdWZqbnl0YXdzZ2tsaWtraGhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEyMzM0NzYsImV4cCI6MjA5NjgwOTQ3Nn0.obZ9jPqGFE0x5KPzN_w7leT4e-6lNbF2XsLu_T-5HBs";
 
 export const isSupabaseConfigured = true;
 
