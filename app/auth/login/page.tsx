@@ -36,7 +36,7 @@ export default function LoginPage() {
       setEnviando(false);
       return;
     }
-    router.push("/dashboard");
+    router.push("/welcome");
   };
 
   return (

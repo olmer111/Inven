@@ -6,6 +6,7 @@ export interface Perfil {
   id: string;
   email: string;
   plan: Plan;
+  nombre_display?: string | null;
   created_at: string;
 }
 

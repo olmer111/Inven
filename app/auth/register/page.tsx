@@ -49,7 +49,7 @@ function FormularioRegistro() {
       return;
     }
     if (data.session) {
-      router.push("/dashboard");
+      router.push("/welcome");
     } else {
       setRegistrado(true);
       setEnviando(false);

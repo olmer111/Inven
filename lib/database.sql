@@ -6,6 +6,7 @@ create table if not exists public.perfiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text not null,
   plan text not null default 'gratuito' check (plan in ('gratuito', 'pro', 'max')),
+  nombre_display text,
   created_at timestamptz not null default now()
 );
 
@@ -43,6 +44,10 @@ alter table public.productos add column if not exists especificaciones text[];
 -- Migración: precio del producto en pesos colombianos (COP), opcional.
 alter table public.productos
   add column if not exists precio numeric check (precio is null or precio >= 0);
+
+-- Migración: nombre de visualización en la pantalla de bienvenida.
+alter table public.perfiles
+  add column if not exists nombre_display text;
 
 create index if not exists productos_user_id_idx on public.productos (user_id);
 
