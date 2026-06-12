@@ -10,7 +10,9 @@ export async function obtenerNombreDisplay(userId: string): Promise<string | nul
 }
 
 export async function guardarNombreDisplay(userId: string, nombre: string): Promise<void> {
+  // UPDATE (no upsert) porque la fila ya existe: el trigger la crea al registrarse.
   await supabase
     .from("perfiles")
-    .upsert({ id: userId, nombre_display: nombre });
+    .update({ nombre_display: nombre })
+    .eq("id", userId);
 }

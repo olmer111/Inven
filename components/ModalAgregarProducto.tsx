@@ -23,6 +23,42 @@ import type { Producto } from "@/lib/supabase";
 
 const MAX_FOTOS = 3;
 
+const CATEGORIAS = [
+  "aceites y vinagres",
+  "arroz y cereales",
+  "bebidas",
+  "carnes y embutidos",
+  "condimentos y salsas",
+  "conservas",
+  "confitería",
+  "electrónica",
+  "ferretería",
+  "frutas y verduras",
+  "galletas y snacks",
+  "harinas y masas",
+  "higiene personal",
+  "lácteos",
+  "legumbres y granos",
+  "limpieza del hogar",
+  "mascotas",
+  "medicamentos",
+  "panadería y repostería",
+  "papelería",
+  "pasta y fideos",
+  "ropa y accesorios",
+  "suplementos",
+  "otros",
+] as const;
+
+function normalizarCategoria(cat: string | null): string {
+  if (!cat) return "otros";
+  const c = cat.toLowerCase();
+  return (
+    CATEGORIAS.find((k) => c.includes(k) || k.includes(c.split(" ")[0])) ??
+    "otros"
+  );
+}
+
 interface ModalAgregarProductoProps {
   abierto: boolean;
   onCerrar: () => void;
@@ -96,15 +132,17 @@ export default function ModalAgregarProducto({
     setError(null);
     const encontrado = await buscarProductoPorCodigo(codigo);
     setProducto(
-      encontrado ?? {
-        codigo,
-        nombre: "",
-        categoria: null,
-        imagen_url: null,
-        descripcion: null,
-        especificaciones: null,
-        precio: null,
-      }
+      encontrado
+        ? { ...encontrado, categoria: normalizarCategoria(encontrado.categoria) }
+        : {
+            codigo,
+            nombre: "",
+            categoria: "otros",
+            imagen_url: null,
+            descripcion: null,
+            especificaciones: null,
+            precio: null,
+          }
     );
     setBuscando(false);
     setPaso("confirmar");
@@ -124,8 +162,8 @@ export default function ModalAgregarProducto({
       setProducto({
         codigo: "",
         nombre: r.reconocido ? r.nombre : "",
-        categoria: r.categoria || null,
-        imagen_url: null,
+        categoria: normalizarCategoria(r.categoria || null),
+        imagen_url: fotos[0],
         descripcion: r.descripcion || null,
         especificaciones: r.especificaciones.length ? r.especificaciones : null,
         precio: null,
@@ -545,6 +583,29 @@ export default function ModalAgregarProducto({
                         placeholder="Ej.: limpiador multiusos para superficies de cocina"
                         className={`${claseInput} h-auto resize-none py-2.5`}
                       />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="categoria-producto"
+                        className="text-sm font-medium text-zinc-700 dark:text-zinc-300"
+                      >
+                        Categoría
+                      </label>
+                      <select
+                        id="categoria-producto"
+                        value={producto.categoria ?? "otros"}
+                        onChange={(e) =>
+                          setProducto({ ...producto, categoria: e.target.value })
+                        }
+                        className={`${claseInput} capitalize`}
+                      >
+                        {CATEGORIAS.map((c) => (
+                          <option key={c} value={c} className="capitalize">
+                            {c.charAt(0).toUpperCase() + c.slice(1)}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     {producto.especificaciones && (
