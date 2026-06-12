@@ -18,12 +18,16 @@ import {
   type ProductoEscaneado,
 } from "@/lib/productos";
 import { reconocerProducto, generarCodigoInterno } from "@/lib/reconocer";
+import { formatearCOP } from "@/lib/moneda";
+import type { Producto } from "@/lib/supabase";
+
+const MAX_FOTOS = 3;
 
 interface ModalAgregarProductoProps {
   abierto: boolean;
   onCerrar: () => void;
   onAgregar: (producto: ProductoEscaneado, cantidad: number) => Promise<void>;
-  codigosExistentes?: Set<string>;
+  productosPorCodigo?: Map<string, Producto>;
 }
 
 type Paso =
@@ -50,24 +54,26 @@ export default function ModalAgregarProducto({
   abierto,
   onCerrar,
   onAgregar,
-  codigosExistentes,
+  productosPorCodigo,
 }: ModalAgregarProductoProps) {
   const [paso, setPaso] = useState<Paso>("metodo");
   const [codigoManual, setCodigoManual] = useState("");
-  const [foto, setFoto] = useState<string | null>(null);
+  const [fotos, setFotos] = useState<string[]>([]);
   const [buscando, setBuscando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [existente, setExistente] = useState<Producto | null>(null);
   const [producto, setProducto] = useState<ProductoEscaneado | null>(null);
   const [cantidad, setCantidad] = useState(1);
 
   const reiniciar = () => {
     setPaso("metodo");
     setCodigoManual("");
-    setFoto(null);
+    setFotos([]);
     setBuscando(false);
     setGuardando(false);
     setError(null);
+    setExistente(null);
     setProducto(null);
     setCantidad(1);
   };
@@ -79,10 +85,13 @@ export default function ModalAgregarProducto({
 
   const procesarCodigo = async (codigo: string) => {
     if (buscando) return;
-    if (codigosExistentes?.has(codigo)) {
-      setError("Este producto ya está en tu inventario.");
+    const dup = productosPorCodigo?.get(codigo);
+    if (dup) {
+      setExistente(dup);
+      setError(null);
       return;
     }
+    setExistente(null);
     setBuscando(true);
     setError(null);
     const encontrado = await buscarProductoPorCodigo(codigo);
@@ -101,12 +110,17 @@ export default function ModalAgregarProducto({
     setPaso("confirmar");
   };
 
-  const analizarFoto = async (imagen: string) => {
-    setFoto(imagen);
+  const agregarFoto = (imagen: string) => {
+    setError(null);
+    setFotos((prev) => (prev.length >= MAX_FOTOS ? prev : [...prev, imagen]));
+  };
+
+  const analizarFotos = async () => {
+    if (fotos.length === 0) return;
     setPaso("analizando");
     setError(null);
     try {
-      const r = await reconocerProducto(imagen);
+      const r = await reconocerProducto(fotos);
       setProducto({
         codigo: "",
         nombre: r.reconocido ? r.nombre : "",
@@ -125,10 +139,13 @@ export default function ModalAgregarProducto({
 
   const asignarCodigo = (codigo: string) => {
     if (!producto) return;
-    if (codigosExistentes?.has(codigo)) {
-      setError("Este producto ya está en tu inventario.");
+    const dup = productosPorCodigo?.get(codigo);
+    if (dup) {
+      setExistente(dup);
+      setError(null);
       return;
     }
+    setExistente(null);
     setError(null);
     setProducto({ ...producto, codigo });
     setPaso("confirmar");
@@ -140,8 +157,9 @@ export default function ModalAgregarProducto({
       return;
     }
     const codigoFinal = producto.codigo || generarCodigoInterno();
-    if (codigosExistentes?.has(codigoFinal)) {
-      setError("Este producto ya está en tu inventario.");
+    const dup = productosPorCodigo?.get(codigoFinal);
+    if (dup) {
+      setExistente(dup);
       return;
     }
     setGuardando(true);
@@ -164,6 +182,28 @@ export default function ModalAgregarProducto({
 
   const esCodigoInterno = producto?.codigo.startsWith("SC-") ?? false;
 
+  // Aviso de duplicado con los datos del producto que ya está guardado.
+  const cardExistente = existente && (
+    <div
+      role="alert"
+      className="rounded-2xl border border-amber-500/50 bg-amber-500/10 p-4"
+    >
+      <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+        Este producto ya está en tu inventario
+      </p>
+      <p className="mt-1.5 text-sm font-medium text-zinc-900 dark:text-zinc-50">
+        {existente.nombre}
+      </p>
+      <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-zinc-600 dark:text-zinc-400">
+        <span>Stock: {existente.cantidad}</span>
+        <span aria-hidden>·</span>
+        <span>{formatearCOP(existente.precio)}</span>
+        <span aria-hidden>·</span>
+        <span className="font-mono">{existente.codigo}</span>
+      </p>
+    </div>
+  );
+
   return (
     <AnimatePresence>
       {abierto && (
@@ -172,7 +212,7 @@ export default function ModalAgregarProducto({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.15 } }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/50 p-0 sm:items-center sm:p-6"
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-zinc-950/50 p-0 sm:items-center sm:p-6"
           onClick={cerrar}
         >
           <motion.div
@@ -188,7 +228,8 @@ export default function ModalAgregarProducto({
               transition: { duration: 0.15, ease: [0.23, 1, 0.32, 1] },
             }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl sm:rounded-2xl"
+            className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white dark:bg-zinc-900 p-6 shadow-xl sm:rounded-2xl"
+            style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-5 flex items-center justify-between">
@@ -198,7 +239,8 @@ export default function ModalAgregarProducto({
                     type="button"
                     onClick={() => {
                       setError(null);
-                      setPaso(paso === "confirmar" && foto ? "pedir-codigo" : "metodo");
+                      setExistente(null);
+                      setPaso(paso === "confirmar" && fotos.length > 0 ? "pedir-codigo" : "metodo");
                     }}
                     aria-label="Volver"
                     className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition duration-150 ease-out hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 active:scale-95"
@@ -289,7 +331,7 @@ export default function ModalAgregarProducto({
                         type="text"
                         inputMode="numeric"
                         value={codigoManual}
-                        onChange={(e) => { setCodigoManual(e.target.value); setError(null); }}
+                        onChange={(e) => { setCodigoManual(e.target.value); setError(null); setExistente(null); }}
                         placeholder="8480000123456"
                         className={`${claseInput} flex-1 font-mono`}
                       />
@@ -311,6 +353,7 @@ export default function ModalAgregarProducto({
                         Buscando en Open Food Facts…
                       </p>
                     )}
+                    {cardExistente}
                     {error && (
                       <p role="alert" className="text-sm text-red-600 dark:text-red-400">
                         {error}
@@ -322,9 +365,51 @@ export default function ModalAgregarProducto({
                 {paso === "foto" && (
                   <div className="space-y-3">
                     <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                      Encuadra el producto completo y con buena luz.
+                      {fotos.length === 0
+                        ? "Encuadra el producto completo y con buena luz."
+                        : "¿Producto redondo o sin etiqueta visible de frente? Gira el producto y toma otra foto desde otro ángulo."}
                     </p>
-                    <CapturaFoto onCapturar={analizarFoto} etiqueta="Hacer foto" />
+                    {fotos.length < MAX_FOTOS && (
+                      <CapturaFoto
+                        onCapturar={agregarFoto}
+                        etiqueta={fotos.length === 0 ? "Hacer foto" : "Añadir otra foto"}
+                      />
+                    )}
+                    {fotos.length > 0 && (
+                      <>
+                        <ul className="flex gap-2" aria-label="Fotos capturadas">
+                          {fotos.map((f, i) => (
+                            <li key={i} className="relative">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={f}
+                                alt={`Foto ${i + 1} del producto`}
+                                className="h-16 w-16 rounded-lg border border-zinc-200 dark:border-zinc-700 object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setFotos((prev) => prev.filter((_, j) => j !== i))
+                                }
+                                aria-label={`Quitar foto ${i + 1}`}
+                                className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                              >
+                                <X size={11} weight="bold" />
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                        <button
+                          type="button"
+                          onClick={analizarFotos}
+                          className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-emerald-600 text-sm font-medium text-white transition duration-150 ease-out hover:bg-emerald-700 active:scale-[0.98]"
+                        >
+                          <Sparkle size={16} weight="bold" />
+                          Analizar con IA ({fotos.length}{" "}
+                          {fotos.length === 1 ? "foto" : "fotos"})
+                        </button>
+                      </>
+                    )}
                     {error && (
                       <p role="alert" className="text-sm text-red-600 dark:text-red-400">
                         {error}
@@ -333,11 +418,11 @@ export default function ModalAgregarProducto({
                   </div>
                 )}
 
-                {paso === "analizando" && foto && (
+                {paso === "analizando" && fotos.length > 0 && (
                   <div className="space-y-4">
                     <div className="relative overflow-hidden rounded-2xl">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={foto} alt="Foto capturada del producto" className="w-full" />
+                      <img src={fotos[0]} alt="Foto capturada del producto" className="w-full" />
                       <div className="absolute inset-0 bg-zinc-950/30" />
                       {/* Línea de escaneo: comunica que la IA está procesando. */}
                       <motion.div
@@ -388,6 +473,7 @@ export default function ModalAgregarProducto({
                       activo={abierto && paso === "pedir-codigo"}
                       onScan={asignarCodigo}
                     />
+                    {cardExistente}
                     {error && (
                       <p role="alert" className="text-sm text-red-600 dark:text-red-400">
                         {error}
@@ -535,6 +621,7 @@ export default function ModalAgregarProducto({
                       />
                     </div>
 
+                    {cardExistente}
                     {error && (
                       <p role="alert" className="text-sm text-red-600 dark:text-red-400">
                         {error}

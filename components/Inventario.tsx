@@ -46,8 +46,8 @@ export default function Inventario({
     [productos, consulta]
   );
 
-  const codigosExistentes = useMemo(
-    () => new Set(productos.map((p) => p.codigo)),
+  const productosPorCodigo = useMemo(
+    () => new Map(productos.map((p) => [p.codigo, p])),
     [productos]
   );
 
@@ -192,7 +192,7 @@ export default function Inventario({
         abierto={modalAbierto}
         onCerrar={() => setModalAbierto(false)}
         onAgregar={onAgregar}
-        codigosExistentes={codigosExistentes}
+        productosPorCodigo={productosPorCodigo}
       />
     </div>
   );

@@ -8,10 +8,12 @@ export interface ProductoReconocido {
   especificaciones: string[];
 }
 
-/** Envía una foto (data URL) a /api/reconocer usando el proveedor configurado. */
+/** Envía una o varias fotos (data URLs, p. ej. distintos ángulos del mismo
+    producto) a /api/reconocer usando el proveedor configurado. */
 export async function reconocerProducto(
-  imagenDataUrl: string
+  imagenes: string | string[]
 ): Promise<ProductoReconocido> {
+  const lista = Array.isArray(imagenes) ? imagenes : [imagenes];
   const config = obtenerConfigIA();
   const { proveedor } = config;
 
@@ -29,7 +31,8 @@ export async function reconocerProducto(
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      imagen: imagenDataUrl,
+      imagen: lista[0],
+      imagenes: lista,
       proveedor,
       modelo,
       ...(apiKey && { apiKey }),
